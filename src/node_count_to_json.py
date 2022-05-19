@@ -13,9 +13,17 @@ valid_size = 2000
 graph_max = 64
 output_path = '../data/sample_data.json'
 
+# Variables to understand more
+node_count = 0
+orphan_count = 0
+
 # Generates a tuple (x_array, y_node_num)
+
+
 def generate_graph():
     global graph_max
+    global node_count
+    global orphan_count
 
     graph_size = random.randrange(graph_max)
     graph_nodes = random.choices(range(graph_max), k=graph_size)
@@ -34,8 +42,15 @@ def generate_graph():
             adj_matrix[x, y] = 1
             adj_matrix[y, x] = 1
 
+    for node in graph_nodes:
+        node_count += 1
+        # Check if matrix row is empty
+        if (np.count_nonzero(adj_matrix[node]) == 0):
+            orphan_count += 1
+
     # numpy arrays are not supported by json
     return (adj_matrix.tolist(), graph_size)
+
 
 def parse_CLI(argv):
     global train_size
@@ -94,6 +109,7 @@ def parse_CLI(argv):
                 print('Graph size must be positive')
                 sys.exit()
 
+
 if __name__ == "__main__":
     parse_CLI(sys.argv[1:])
     with open(output_path, 'w') as f:
@@ -105,6 +121,9 @@ if __name__ == "__main__":
             'y_valid': []
         }
 
+        node_count = 0
+        orphan_count = 0
+
         for i in range(train_size):
             if ((i+1) % 1000 == 0):
                 print(f'{i+1}-th training output done')
@@ -112,6 +131,12 @@ if __name__ == "__main__":
             (arr, num) = generate_graph()
             data_object['x_train'].append(arr)
             data_object['y_train'].append(num)
+        
+        print(f'Total Nodes: {node_count} / {train_size * graph_max}, Orphan Count: {orphan_count}')
+        print(f'Average Nodes: {node_count / train_size} / {graph_max}, Average Orphans: {orphan_count / train_size}')
+
+        node_count = 0
+        orphan_count = 0
 
         for j in range(valid_size):
             if ((j+1) % 1000 == 0):
@@ -120,6 +145,9 @@ if __name__ == "__main__":
             (arr, num) = generate_graph()
             data_object['x_valid'].append(arr)
             data_object['y_valid'].append(num)
+
+        print(f'Total Nodes: {node_count} / {valid_size * graph_max}, Orphan Count: {orphan_count}')
+        print(f'Average Nodes: {node_count / valid_size} / {graph_max}, Average Orphans: {orphan_count / valid_size}')
 
         # output json
         print(f'Writing to {output_path}...')
